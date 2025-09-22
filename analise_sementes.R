@@ -7,16 +7,36 @@ pacotes <- c("plotly",
              "ggrepel", 
              "knitr", 
              "kableExtra", 
-             "reshape2", 
+             "reshape2",
+             "PerformanceAnalytics",
+             "psych",
+             "ltm",
+             "Hmisc",
              "misc3d", 
              "plot3D", 
              "cluster",
              "factoextra",
+             "clusterCrit",
+             "mclust",
+             "clusterSim",
+             "aricode",
+             "fossil",
+             "dendextend",
+             "fpc",
+             "NbClust",
+             "ggplot2",
+             "gridExtra",
+             "tidyverse",
+             "plotly",
+             "ClusterR",
+             "reshape2",
+             "GGally",
              "readr",
              "sf",
              "ade4",
              "readxl",
              "dplyr")
+
 
 if(sum(as.numeric(!pacotes %in% installed.packages())) != 0){
   instalador <- pacotes[!pacotes %in% installed.packages()]
@@ -31,13 +51,15 @@ if(sum(as.numeric(!pacotes %in% installed.packages())) != 0){
 # Carregamento de todo o ambiente
 load("ambiente_completo.RData")
 
-
 # Carregamento dos dados
 dados_originais <- read_excel("Pumpkin_Seeds_Dataset.xlsx")
 
-#Exclusão da coluna Class
-dados <- dados_originais  %>% select(-Class)
+# Reduzindo a quantidade de registros
+set.seed(223)  # definindo uma semente para garantir a reprodutibilidade
+dados_reduzidos <- dados_originais %>% slice_sample(n = 500)
 
+#Exclusão da coluna Class
+dados <- dados_reduzidos  %>% select(-Class)
 
 head(dados)        # Mostra as primeiras linhas
 str(dados)         # Estrutura das variáveis
@@ -64,15 +86,15 @@ km_res <- kmeans(dados_padronizados, centers = 2, nstart = 25)
 print(km_res)
 
 # Visualização
-fviz_cluster(km_res, data = dados_padronizados, ellipse.type = "convex",
+fviz_cluster(km_res, data = dados, ellipse.type = "convex",
              ggtheme = theme_minimal(), main = "K-means (k=2)")
 
 # Comparar com classes reais
-print(table(Cluster = km_res$cluster, TrueClass = dados_originais$Class))
+print(table(Cluster = km_res$cluster, TrueClass = dados_reduzidos$Class))
 
 
 # Elaboração da clusterização hierárquica
-cluster_hier <- agnes(x = dados_padronizados, method = "single")
+cluster_hier <- agnes(x = dados, method = "single")
 
 # O input é a matriz de distâncias obtida anteriormente
 
@@ -125,4 +147,7 @@ dados_padronizados %>%
                 full_width = FALSE,
                 font_size = 20)
 
+
+
 save.image(file = "ambiente_completo.RData")
+
