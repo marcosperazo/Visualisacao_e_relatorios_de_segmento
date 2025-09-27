@@ -58,8 +58,11 @@ dados_originais <- read_excel("Pumpkin_Seeds_Dataset.xlsx")
 set.seed(223)  # definindo uma semente para garantir a reprodutibilidade
 dados_reduzidos <- dados_originais %>% slice_sample(n = 500)
 
+dados_reduzidos <- as.data.frame(dados_reduzidos)
+
+
 #Exclusão da coluna Class
-dados <- dados_reduzidos  %>% select(-Class)
+dados <- dados_reduzidos %>% dplyr::select(-Class)
 
 head(dados)        # Mostra as primeiras linhas
 str(dados)         # Estrutura das variáveis
@@ -140,14 +143,82 @@ fviz_dend(x = cluster_hier,
 ## O argumento 'k' indica a quantidade de clusters
 dados_padronizados$cluster_H <- factor(cutree(tree = cluster_hier, k = 2))
 
-# Visualização da base de dados com a alocação das observações nos clusters
-dados_padronizados %>%
+
+
+
+
+
+# Coeficientes de correlação de Pearson para cada par de variáveis
+rho <- rcorr(as.matrix(dados_padronizados), type="pearson")
+
+corr_coef <- rho$r # Matriz de correlações
+corr_sig <- round(rho$P, 5) # Matriz com p-valor dos coeficientes
+
+
+
+
+
+# Elaboração de um mapa de calor das correlações de Pearson entre as variáveis
+ggplotly(
+  dados_padronizados %>%
+    cor() %>%
+    melt() %>%
+    rename(Correlação = value) %>%
+    ggplot() +
+    geom_tile(aes(x = Var1, y = Var2, fill = Correlação)) +
+    scale_fill_viridis_b() +
+    labs(x = NULL, y = NULL) +
+    theme_bw(base_size = 6))
+
+# Teste de esfericidade de Bartlett
+cortest.bartlett(dados_padronizados)
+
+###p.value é igaual a zero
+
+# Elaboração da análise fatorial por componentes principais
+fatorial <- principal(dados_padronizados,
+                      nfactors = ncol(dados_padronizados),
+                      rotate = "none",
+                      scores = TRUE)
+
+cum_var <- fatorial$Vaccounted["Cumulative Var", ]
+cum_var
+
+# Encontra o menor número de componentes que atinge ou ultrapassa 95%
+num_comp <- which(cum_var >= 0.95)[1]
+num_comp
+
+variancia_compartilhada <- as.data.frame(fatorial$Vaccounted) %>% 
+  slice(1:3)
+
+rownames(variancia_compartilhada) <- c("Autovalores",
+                                       "Prop. da Variância",
+                                       "Prop. da Variância Acumulada")
+
+# Variância compartilhada pelas variáveis originais para a formação de cada fator
+round(variancia_compartilhada, 3) %>%
   kable() %>%
   kable_styling(bootstrap_options = "striped", 
-                full_width = FALSE,
+                full_width = FALSE, 
                 font_size = 20)
+
+
+pca_df <- data.frame(
+  fatorial$scores[, 1:2], 
+  classe_da_semente = dados_reduzidos$Class
+)
+
+
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = classe_da_semente)) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(title = "PCA - Classe da Semente",
+       x = "Componente Principal 1",
+       y = "Componente Principal 2") +
+  theme_minimal()
 
 
 
 save.image(file = "ambiente_completo.RData")
+
 
