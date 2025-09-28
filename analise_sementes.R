@@ -71,10 +71,23 @@ ggpairs(dados_reduzidos,
         diag = list(continuous = "densityDiag")) +
   theme_linedraw()
 
+dados_long <- melt(dados_reduzidos, id.vars = "Class")
+print(dados_long)
+
+#Boxplot
+ggplot(dados_long, aes(x=Class, y=value, fill=Class)) +
+  geom_boxplot(alpha=0.7) +
+  facet_wrap(~ variable, scales='free_y') +
+  labs(title = "Boxplots dos atributos por classe")
+
+
+
 #Exclusão da coluna Class
 dados <- dados_reduzidos %>% dplyr::select(-Class)
 
 head(dados)        # Mostra as primeiras linhas
+knitr::kable(head(dados), caption = "Primeiras linhas do conjunto de dados de sementes de abóbora")
+
 str(dados)         # Estrutura das variáveis
 summary(dados)     # Estatísticas básicas
 

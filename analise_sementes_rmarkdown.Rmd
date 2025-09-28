@@ -64,6 +64,15 @@ dados_reduzidos <- dados_originais %>% slice_sample(n = 500)
 dados_reduzidos <- as.data.frame(dados_reduzidos)
 ```
 
+```{r Boxplot}
+dados_long <- melt(dados_reduzidos, id.vars = "Class")
+
+ggplot(dados_long, aes(x=Class, y=value, fill=Class)) +
+  geom_boxplot(alpha=0.7) +
+  facet_wrap(~ variable, scales='free_y') +
+  labs(title = "Boxplots dos atributos por classe")
+```
+
 ```{r Gráfico com a correlação entre cada um dos pares de variáveis possíveis}
 ggpairs(dados_reduzidos, 
         columns = 1:12,      # Apenas variáveis numéricas
@@ -79,10 +88,12 @@ dados <- dados_reduzidos %>% dplyr::select(-Class)
 ```
 
 ```{r Análise inicial}
-head(dados)        # Mostra as primeiras linhas
+knitr::kable(head(dados), caption = "Primeiras linhas do conjunto de dados de sementes de abóbora")
 str(dados)         # Estrutura das variáveis
 summary(dados)     # Estatísticas básicas
 ```
+
+O data frame dados possui 16 variáveis numéricas que descrevem características morfológicas das sementes de abóbora, como área, perímetro, redondeza e razão de aspecto. Essas variáveis serão utilizadas para classificar os tipos de sementes presentes no conjunto.
 
 ```{r Normalização dos dados}
 dados_padronizados <- scale(dados)
@@ -190,8 +201,9 @@ p3 <- ggplot(resultados, aes(x = Algoritmo, y = DBI, fill = Algoritmo)) +
 grid.arrange(p1, p2, p3, nrow = 3)
 ```
 
-## Aplicação do algorítmo PCA nos dados normalizados
+Nesse cenário, o algoritmo PAM apresentou o melhor desempenho geral, com o maior índice de silhueta e o menor DBI, indicando boa separação entre os grupos e baixa sobreposição. Apesar do WSS elevado, o modelo mostrou-se mais coeso e interpretável.
 
+## Aplicação do algorítmo PCA nos dados normalizados
 
 ```{r  Coeficientes de correlação de Pearson para cada par de variáveis}
 rho <- rcorr(as.matrix(dados_padronizados), type="pearson")
@@ -269,17 +281,26 @@ ggplot(pca_df, aes(x = PC1, y = PC2, color = classe_da_semente)) +
 
 ## Análise dos dados após PCA
 
+```{r Boxplot após PCA}
+pca_df_long <- melt(pca_df, id.vars = "classe_da_semente")
+
+ggplot(pca_df_long, aes(x=classe_da_semente, y=value, fill=classe_da_semente)) +
+  geom_boxplot(alpha=0.7) +
+  facet_wrap(~ variable, scales='free_y') +
+  labs(title = "Boxplots dos componentes gerados no PCA")
+```
+
 ```{r Exclusão da coluna classe_da_semente}
 dados_pca_df <- pca_df %>% dplyr::select(-classe_da_semente)
 ```
 
-```{r Análise inicial}
-head(dados_pca_df)        # Mostra as primeiras linhas
+```{r Análise inicial apos PCA}
+knitr::kable(head(pca_df), caption = "Primeiras linhas do conjunto de dados de sementes de abóbora após o PCA")
 str(dados_pca_df)         # Estrutura das variáveis
 summary(dados_pca_df)     # Estatísticas básicas
 ```
 
-```{r Obtenção dos dados reais}
+```{r Obtenção dos dados reais após PCA}
 ground_truth_pca_df <- pca_df$classe_da_semente
 n_rows_pca_df <- nrow(dados_pca_df)
 k_clusters_pca_df <- 2 # numero de clusters
@@ -381,4 +402,5 @@ p6 <- ggplot(resultados, aes(x = Algoritmo, y = DBI, fill = Algoritmo)) +
 grid.arrange(p4, p5, p6, nrow = 3)
 ```
 
-
+Após a aplicação do PCA, que reduziu a dimensionalidade dos dados mantendo a maior parte da variância explicada, observou-se uma melhora significativa nos resultados dos modelos.
+Com a nova representação dos dados, o algoritmo K-Means passou a liderar em todas as métricas, apresentando maior coesão interna (menor WSS), melhor separação entre os clusters (maior silhueta) e menor sobreposição (menor DBI). Isso evidencia o impacto positivo da redução de dimensionalidade na performance dos modelos de agrupamento.
