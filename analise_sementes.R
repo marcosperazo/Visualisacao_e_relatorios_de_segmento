@@ -37,6 +37,7 @@ pacotes <- c("plotly",
              "readxl",
              "dplyr",
              "rmarkdown",
+             "openxlsx",
              "tinytex")
 
 
@@ -254,7 +255,8 @@ ggplot(pca_df, aes(x = PC1, y = PC2, color = classe_da_semente)) +
        y = "Componente Principal 2") +
   theme_minimal()
 
-
+head(pca_df)
+str(pca_df)
 ###############################
 
 #Exclusão da coluna Class
@@ -356,5 +358,13 @@ grid.arrange(p4, p5, p6, nrow = 3)
 
 save.image(file = "ambiente_completo.RData")
 
+write.csv(pca_df, "pca_df.csv", row.names = FALSE, fileEncoding = "Latin1")
+
+write.csv(pca_df, "pca_df.csv", row.names = FALSE)
+names(pca_df) <- c("PC1", "PC2", "Cluster")
+
+write.xlsx(pca_df, file = "pca_df.xlsx", sheetName = "PCA", rowNames = FALSE)
+names(pca_df) <- c("PC1", "PC2", "Classe")
+write.xlsx(pca_df, file = "C:/Users/Marcos/Documents/pca_df.xlsx")
 
 

@@ -2,13 +2,13 @@
 title: "Análise e classificação de sementes de abóbora"
 author: "Marcos Perazo Viana"
 date: '`r format(Sys.Date(), "%d de %B de %Y")`'
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(plotly) 
 library(tidyverse)
+library(plotly)
 library(ggrepel)
 library(knitr)
 library(kableExtra) 
@@ -43,6 +43,7 @@ library(readxl)
 library(dplyr)
 library(rmarkdown)
 library(tinytex)
+library(viridis)
 ```
 
 ## Ambiente do RStudio
@@ -87,11 +88,13 @@ ggpairs(dados_reduzidos,
 dados <- dados_reduzidos %>% dplyr::select(-Class)
 ```
 
+\tiny
 ```{r Análise inicial}
 knitr::kable(head(dados), caption = "Primeiras linhas do conjunto de dados de sementes de abóbora")
 str(dados)         # Estrutura das variáveis
 summary(dados)     # Estatísticas básicas
 ```
+\normalsize
 
 O data frame dados possui 16 variáveis numéricas que descrevem características morfológicas das sementes de abóbora, como área, perímetro, redondeza e razão de aspecto. Essas variáveis serão utilizadas para classificar os tipos de sementes presentes no conjunto.
 
@@ -211,21 +214,24 @@ corr_coef <- rho$r          # Matriz de correlações
 corr_sig <- round(rho$P, 5) # Matriz com p-valor dos coeficientes
 ```
 
+```{r Elaboração de um mapa de calor das correlações de Pearson entre as variáveis}
+# Calcula correlação e transforma em formato longo
+correlacoes <- cor(dados_padronizados)
+cor_melt <- melt(correlacoes)
 
+# Renomeia coluna de correlação
+names(cor_melt) <- c("Var1", "Var2", "Correlacao")
 
-
-```{r  Elaboração de um mapa de calor das correlações de Pearson entre as variáveis}
-ggplotly(
-  dados_padronizados %>%
-    cor() %>%
-    melt() %>%
-    rename(Correlação = value) %>%
-    ggplot() +
-    geom_tile(aes(x = Var1, y = Var2, fill = Correlação)) +
-    scale_fill_viridis_b() +
-    labs(x = NULL, y = NULL) +
-    theme_bw(base_size = 6))
+# Mapa de calor com ggplot2
+ggplot(cor_melt, aes(x = Var1, y = Var2, fill = Correlacao)) +
+  geom_tile(color = "white") +
+  scale_fill_viridis_c(option = "B", direction = 1) +
+  labs(title = "Mapa de calor das correlações de Pearson",
+       x = NULL, y = NULL, fill = "Correlação") +
+  theme_bw(base_size = 10) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
 
 ```{r  Teste de esfericidade de Bartlett}
 cortest.bartlett(dados_padronizados)
@@ -242,10 +248,11 @@ cum_var <- fatorial$Vaccounted["Cumulative Var", ]
 cum_var
 ```
 
-```{r Encontra o menor número de componentes que atinge ou ultrapassa 95%}
+```{r Encontra o menor número de componentes que atinge ou ultrapassa 70%}
 num_comp <- which(cum_var >= 0.7)[1]
 num_comp
 ```
+
 
 ```{r Variância compartilhada pelas variáveis originais para a formação de cada fator}
 variancia_compartilhada <- as.data.frame(fatorial$Vaccounted) %>% 
@@ -262,6 +269,7 @@ round(variancia_compartilhada, 3) %>%
                 font_size = 20)
 ```
 
+
 ```{r Obtenção do dataframe com o resultado do PCA}
 pca_df <- data.frame(
   fatorial$scores[, 1:2], 
@@ -269,6 +277,17 @@ pca_df <- data.frame(
 )
 ```
 
+```{r Exclusão coluna classe_da_semente}
+pca_df_dados <- pca_df %>% dplyr::select(-classe_da_semente)
+```
+
+
+```{r Método da silhueta para os dados após PCA}
+fviz_nbclust(pca_df_dados, kmeans, method = "silhouette") +
+  ggplot2::labs(title = "Silhouette Method")
+```
+
+O número de centróides pode ser obtido utilizando o índice de Silhueta. No gráfico acima, podemos verificar que são determinados nove centróides. Porém esse valor não condiz com os dados reais, que são apenas dois tipos de sementes diferentes.
 
 ```{r Distribuição dos dados após o PCA}
 ggplot(pca_df, aes(x = PC1, y = PC2, color = classe_da_semente)) +
@@ -404,3 +423,9 @@ grid.arrange(p4, p5, p6, nrow = 3)
 
 Após a aplicação do PCA, que reduziu a dimensionalidade dos dados mantendo a maior parte da variância explicada, observou-se uma melhora significativa nos resultados dos modelos.
 Com a nova representação dos dados, o algoritmo K-Means passou a liderar em todas as métricas, apresentando maior coesão interna (menor WSS), melhor separação entre os clusters (maior silhueta) e menor sobreposição (menor DBI). Isso evidencia o impacto positivo da redução de dimensionalidade na performance dos modelos de agrupamento.
+
+## Tableau
+
+Segue o link do gráfico solicitado na sexta questão:
+[Gráfico salvo no Tableau Server](https://public.tableau.com/app/profile/marcos.perazo.viana/viz/Livro1_17590972068770/Grficodeespalhamento?publish=yes) e o print do ambiente Tableau:
+![Ambiente RStudio](C:\Users\peraz\OneDrive\Arquivo\Marcos\Curso_de_Data_Science\Segmentacao\Visualizacao_e_Relatorios_de_Segmento\Projeto\imagens\Tableau.png)
